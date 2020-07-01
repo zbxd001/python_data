@@ -2,6 +2,8 @@ import json
 import numpy as np
 import collections
 import matplotlib.pyplot as plt
+import statsmodels.stats.weightstats as st
+
 with open("test_data.json",'r',encoding='UTF-8') as load_f:
     load_dict = json.load(load_f)
     load_dict = load_dict.items()
@@ -87,6 +89,8 @@ with open("test_data.json",'r',encoding='UTF-8') as load_f:
             print("可以看出：\n平均分与通过率之间的皮尔逊相关系数的绝对值最接近1，所以平均数与通过率决定的难度准确率最高。")
         else:
             print("可以看出：\n方差与通过率之间的皮尔逊相关系数的绝对值最接近1，所以方差与通过率决定的难度准确率最高。")
+
+    print()
 
     plt.subplot(221)
     plt.rcParams['font.family'] = ['sans-serif']
@@ -193,6 +197,48 @@ for q in range(len(easy1)):
                     hard.append(easy1[q])
                 else:
                     medium.append(easy1[q])
+
+
+#假设检验
+avgD=[]
+passD=[]
+i=0
+j=0
+for i in range(len(sortData)):
+    avgD.append(sortData[i][1])
+
+for j in range(len(passData)):
+    passD.append(passData[j][1])
+
+t,p_two,df=st.ttest_ind(avgD,passD,usevar='unequal')
+print('t=',t,'p值：',p_two,'自由度：',df)
+
+#判断标准（显著水平）使用alpha=5%
+alpha=0.05
+'''判断条件：p值《判断标准（显著水平）alpha/2时，拒绝原假设，有显著差异'''
+if p_two<alpha/2:
+    print('拒绝原假设，有显著差异,也就是每一题的平均分和通过率有显著差异')
+else:
+    print('接受原假设，没有显著差异，也就是每一题的平均分和通过率没有显著差异')
+
+print()
+print('根据自由度查表，t值为1.96')
+t_ci=1.96
+se=np.sqrt(np.var(avgD)/len(avgD)+np.mean(passD)/len(passD))
+
+'''对于双独立样本检验
+置信区间的样本平均值=A样本平均值-B样本平均值'''
+
+sample_mean=np.mean(avgD)-np.mean(passD)
+#置信区间上限
+a=sample_mean-t_ci*se
+#置信区间下限
+b=sample_mean+t_ci*se
+
+print('平均分和通过率差值的置信区间，95置信水平 CI=[%f,%f]'%(a,b))
+
+print()
+
 
 print("——————————最终难度定为3个层次，分别为hard，medium，easy——————————\n")
 print("hard : ")
